@@ -1,0 +1,41 @@
+# =============================================================================
+# docker-compose.yml — Local Development with Redis
+# =============================================================================
+# This lets you run the app + Redis locally with one command:
+#   make docker-dev
+#
+# You DON'T need Docker to deploy to Railway (Railway handles everything).
+# This is only for local development if you want Redis caching locally.
+#
+# PREREQUISITES:
+#   Install Docker Desktop: https://www.docker.com/products/docker-desktop
+# =============================================================================
+
+version: "3.8"
+
+services:
+  # --- The API Server ---
+  api:
+    build: .
+    ports:
+      - "8000:8000"              # Map localhost:8000 → container:8000
+    environment:
+      - REDIS_URL=redis://redis:6379    # "redis" is the service name below
+      - PORT=8000
+      - LOG_LEVEL=DEBUG                 # More verbose logging for dev
+    depends_on:
+      - redis                           # Wait for Redis to start first
+    volumes:
+      - .:/app                          # Mount your code so changes auto-reload
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+  # --- Redis (for caching & rate limiting) ---
+  redis:
+    image: redis:7-alpine               # Lightweight Redis image
+    ports:
+      - "6379:6379"                     # Expose Redis for debugging tools
+    volumes:
+      - redis_data:/data                # Persist data between restarts
+
+volumes:
+  redis_data:                           # Named volume for Redis persistence

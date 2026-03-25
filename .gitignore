@@ -1,0 +1,46 @@
+# =============================================================================
+# .gitignore — Files to Exclude from Git
+# =============================================================================
+# These files should NEVER be committed to GitHub. They contain secrets,
+# temporary files, or machine-specific settings.
+# =============================================================================
+
+# --- Secrets ---
+# Your .env file contains passwords and wallet addresses. NEVER commit it.
+.env
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# --- Testing ---
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+
+# --- Docker ---
+# Don't commit Docker volumes.
+redis_data/
+
+# --- Linting ---
+.ruff_cache/
+.mypy_cache/

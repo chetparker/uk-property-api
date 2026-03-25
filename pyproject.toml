@@ -1,0 +1,35 @@
+# =============================================================================
+# pyproject.toml — Project & Tool Configuration
+# =============================================================================
+# This file configures pytest, ruff (linter), and other tools.
+# It replaces the old setup.cfg / pytest.ini / .flake8 approach.
+# =============================================================================
+
+[project]
+name = "uk-property-api"
+version = "1.0.0"
+requires-python = ">=3.11"
+
+# --- Pytest Configuration ---
+[tool.pytest.ini_options]
+# Where to find tests.
+testpaths = ["tests"]
+# Show verbose output by default.
+addopts = "-v"
+# Pattern for test files.
+python_files = ["test_*.py"]
+# Enable async test support.
+asyncio_mode = "auto"
+
+# --- Ruff Linter Configuration ---
+[tool.ruff]
+# Target Python 3.11+.
+target-version = "py311"
+# Max line length (120 is more readable than the strict 79).
+line-length = 120
+
+[tool.ruff.lint]
+# Enable sensible defaults.
+select = ["E", "F", "W", "I"]
+# Ignore some overly strict rules.
+ignore = ["E501"]  # Line too long (we set 120 above, but don't enforce hard)
