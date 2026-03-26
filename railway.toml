@@ -1,24 +1,6 @@
-# =============================================================================
-# railway.toml — Railway Platform Configuration
-# =============================================================================
-# This file tells Railway how to build and deploy your app.
-# Docs: https://docs.railway.app/reference/config-as-code
-# =============================================================================
-
-[build]
-# Use Nixpacks (Railway's default builder). It auto-detects Python
-# from the requirements.txt file and installs dependencies.
-builder = "NIXPACKS"
-
 [deploy]
-# Start command (same as Procfile, but Railway prefers this).
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"
-
-# Health check — Railway pings this URL to verify the app is running.
-# If it doesn't return 200, Railway will restart the app.
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
-
-# Restart policy: always restart if the process crashes.
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
