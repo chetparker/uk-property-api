@@ -31,6 +31,11 @@ from app.models.schemas import HealthResponse
 from app.routes.sold_prices import router as sold_prices_router
 from app.routes.yield_estimate import router as yield_router
 from app.routes.stamp_duty import router as stamp_duty_router
+from app.routes.epc import router as epc_router
+from app.routes.crime import router as crime_router
+from app.routes.flood_risk import router as flood_risk_router
+from app.routes.planning import router as planning_router
+from app.routes.council_tax import router as council_tax_router
 
 
 # =============================================================================
@@ -166,6 +171,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(sold_prices_router)
 app.include_router(yield_router)
 app.include_router(stamp_duty_router)
+app.include_router(epc_router)
+app.include_router(crime_router)
+app.include_router(flood_risk_router)
+app.include_router(planning_router)
+app.include_router(council_tax_router)
 
 
 # =============================================================================

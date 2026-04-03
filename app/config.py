@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     # 3600 = 1 hour. Land Registry data doesn't change often.
     cache_ttl_seconds: int = 3600
 
+    # ---- EPC API ----
+    # Optional API key for the EPC register. If empty, returns estimated averages.
+    epc_api_key: str = ""
+
     # ---- Logging ----
     log_level: str = "INFO"
 
