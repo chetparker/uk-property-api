@@ -89,6 +89,16 @@ def _build_402_response(settings, request: Request) -> JSONResponse:
     )
 
 
+
+def _decode_payload(payment_header: str) -> dict:
+    """Decode base64 payment payload to dict for facilitator."""
+    try:
+        decoded = json.loads(base64.b64decode(payment_header))
+        return decoded
+    except Exception:
+        return {"raw": payment_header}
+
+
 async def _verify_payment(payment_header: str, settings, request: Request) -> bool:
     facilitator_url = settings.x402_facilitator_url
 
@@ -114,7 +124,7 @@ async def _verify_payment(payment_header: str, settings, request: Request) -> bo
             response = await client.post(
                 f"{facilitator_url}/verify",
                 json={
-                    "paymentPayload": payment_header,
+                    "paymentPayload": _decode_payload(payment_header),
                     "paymentRequirements": payment_requirements,
                 },
             )
