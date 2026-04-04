@@ -15,7 +15,7 @@ from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
 FREE_ENDPOINTS = {
     "/", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico",
@@ -67,8 +67,8 @@ def _build_402_response(settings, request: Request) -> JSONResponse:
         "accepts": [
             {
                 "scheme": "exact",
-                "network": "eip155:84532",
-                "asset": USDC_BASE_SEPOLIA,
+                "network": "eip155:8453",
+                "asset": USDC_BASE,
                 "amount": amount,
                 "payTo": settings.payment_wallet_address,
                 "maxTimeoutSeconds": 300,
@@ -111,8 +111,8 @@ async def _verify_payment(payment_header: str, settings, request: Request) -> bo
 
     payment_requirements = {
         "scheme": "exact",
-        "network": "eip155:84532",
-        "asset": USDC_BASE_SEPOLIA,
+        "network": "eip155:8453",
+        "asset": USDC_BASE,
         "amount": amount,
         "payTo": settings.payment_wallet_address,
         "maxTimeoutSeconds": 300,
