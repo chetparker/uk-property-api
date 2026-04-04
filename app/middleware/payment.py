@@ -73,7 +73,7 @@ def _build_402_response(settings, request: Request) -> JSONResponse:
                 "payTo": settings.payment_wallet_address,
                 "maxTimeoutSeconds": 300,
                 "extra": {
-                    "name": "USDC",
+                    "name": "USD Coin",
                     "version": "2",
                 },
             }
@@ -116,7 +116,7 @@ async def _verify_payment(payment_header: str, settings, request: Request) -> bo
         "amount": amount,
         "payTo": settings.payment_wallet_address,
         "maxTimeoutSeconds": 300,
-        "extra": {"name": "USDC", "version": "2"},
+        "extra": {"name": "USD Coin", "version": "2"},
     }
 
     try:
