@@ -120,7 +120,7 @@ async def _verify_payment(payment_header: str, settings, request: Request) -> bo
     }
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
             response = await client.post(
                 f"{facilitator_url}/verify",
                 json={
