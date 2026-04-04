@@ -134,6 +134,24 @@ async def _verify_payment(payment_header: str, settings, request: Request) -> bo
                 is_valid = result.get("valid", False) or result.get("isValid", False)
                 if is_valid:
                     logger.info(f"Payment verified: {result}")
+                    # Settle — actually move the USDC on-chain
+                    try:
+                        settle_resp = await client.post(
+                            f"{facilitator_url}/settle",
+                            json={
+                                "x402Version": 2,
+                                "paymentPayload": _decode_payload(payment_header),
+                                "paymentRequirements": payment_requirements,
+                            },
+                        )
+                        settle_data = settle_resp.json()
+                        tx_hash = settle_data.get("txHash", settle_data.get("transactionHash"))
+                        if tx_hash:
+                            logger.info(f"Payment settled on-chain: {tx_hash}")
+                        else:
+                            logger.info(f"Settlement response: {settle_data}")
+                    except Exception as e:
+                        logger.warning(f"Settlement call failed (payment still verified): {e}")
                 return is_valid
             else:
                 logger.error(f"Facilitator returned {response.status_code}: {response.text}")
