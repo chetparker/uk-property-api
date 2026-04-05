@@ -187,6 +187,8 @@ app.include_router(companies_router)
 app.include_router(vehicle_router)
 app.include_router(finance_router)
 
+from app.mcp_server import mount_mcp
+mount_mcp(app)
 
 
 # =============================================================================

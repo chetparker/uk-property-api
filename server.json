@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chetparker/uk-data-api",
+  "title": "UK Data API",
+  "description": "24 endpoints for UK data — Land Registry sold prices, rental yields, stamp duty, EPC ratings, crime stats, flood risk, planning, council tax, weather, air quality, Companies House, DVLA vehicles, MOT history, Bank of England rates, exchange rates, inflation, and mortgage calculator. All paid per-request via x402 protocol on Base network.",
+  "version": "2.0.0",
+  "repository": {
+    "url": "https://github.com/chetparker/uk-property-api",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "sse",
+      "url": "https://web-production-18a32.up.railway.app/mcp/sse"
+    }
+  ]
+}
