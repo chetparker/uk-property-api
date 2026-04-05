@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
 FREE_ENDPOINTS = {
-    "/", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico",
+    "/", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico", "/.well-known/x402.json",
 }
 
 
