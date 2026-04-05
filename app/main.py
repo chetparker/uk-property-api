@@ -36,6 +36,12 @@ from app.routes.crime import router as crime_router
 from app.routes.flood_risk import router as flood_risk_router
 from app.routes.planning import router as planning_router
 from app.routes.council_tax import router as council_tax_router
+# New domain routers
+from app.routes.weather import router as weather_router
+from app.routes.companies import router as companies_router
+from app.routes.vehicle import router as vehicle_router
+from app.routes.finance import router as finance_router
+
 
 
 # =============================================================================
@@ -72,7 +78,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage app lifecycle: connect to Redis on startup, disconnect on shutdown."""
-    logger.info("Starting UK Property Data API...")
+    logger.info("Starting UK Data API...")
     await init_redis()
     logger.info("Startup complete — API is ready")
     yield                                   # App is running and serving requests.
@@ -176,6 +182,11 @@ app.include_router(crime_router)
 app.include_router(flood_risk_router)
 app.include_router(planning_router)
 app.include_router(council_tax_router)
+app.include_router(weather_router)
+app.include_router(companies_router)
+app.include_router(vehicle_router)
+app.include_router(finance_router)
+
 
 
 # =============================================================================
@@ -219,6 +230,22 @@ async def well_known_x402():
             {'method': 'POST', 'path': '/flood-risk', 'price': '0.001', 'description': 'Flood risk assessment'},
             {'method': 'POST', 'path': '/planning-applications', 'price': '0.001', 'description': 'Planning applications'},
             {'method': 'POST', 'path': '/council-tax', 'price': '0.001', 'description': 'Council tax data'},
+            {'method': 'POST', 'path': '/current-weather', 'price': '0.001', 'description': 'Current weather conditions'},
+            {'method': 'POST', 'path': '/weather-forecast', 'price': '0.001', 'description': 'Weather forecast'},
+            {'method': 'POST', 'path': '/historical-weather', 'price': '0.002', 'description': 'Historical weather'},
+            {'method': 'POST', 'path': '/air-quality', 'price': '0.001', 'description': 'Air quality index'},
+            {'method': 'POST', 'path': '/company-search', 'price': '0.001', 'description': 'Search UK companies'},
+            {'method': 'POST', 'path': '/company-profile', 'price': '0.001', 'description': 'Company profile'},
+            {'method': 'POST', 'path': '/officers', 'price': '0.001', 'description': 'Company officers'},
+            {'method': 'POST', 'path': '/filings', 'price': '0.001', 'description': 'Filing history'},
+            {'method': 'POST', 'path': '/vehicle-info', 'price': '0.001', 'description': 'Vehicle details'},
+            {'method': 'POST', 'path': '/mot-history', 'price': '0.002', 'description': 'MOT test history'},
+            {'method': 'POST', 'path': '/tax-status', 'price': '0.001', 'description': 'Vehicle tax status'},
+            {'method': 'POST', 'path': '/emissions', 'price': '0.001', 'description': 'Vehicle emissions'},
+            {'method': 'POST', 'path': '/interest-rates', 'price': '0.001', 'description': 'BoE base rate'},
+            {'method': 'POST', 'path': '/exchange-rates', 'price': '0.001', 'description': 'Exchange rates'},
+            {'method': 'POST', 'path': '/inflation', 'price': '0.001', 'description': 'UK CPI inflation'},
+            {'method': 'POST', 'path': '/mortgage-calculator', 'price': '0.001', 'description': 'Mortgage calculator'},
         ],
     }
 
