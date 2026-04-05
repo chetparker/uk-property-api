@@ -101,7 +101,7 @@ app = FastAPI(
     # Extra metadata shown in /docs.
     contact={
         "name": "UK Property Data API",
-        "url": "https://github.com/yourname/uk-property-api",
+        "url": "https://github.com/chetparker/uk-property-api",
     },
     license_info={
         "name": "MIT",
