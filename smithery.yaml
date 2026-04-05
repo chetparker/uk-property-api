@@ -1,0 +1,14 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      sseUrl:
+        type: string
+        description: "SSE endpoint URL"
+        default: "https://web-production-18a32.up.railway.app/mcp/sse"
+  commandFunction: |
+    (config) => ({
+      command: 'curl',
+      args: ['-N', config.sseUrl || 'https://web-production-18a32.up.railway.app/mcp/sse']
+    })
