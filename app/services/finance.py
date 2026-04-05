@@ -13,16 +13,28 @@ async def fetch_interest_rates(months: int = 12) -> dict:
     start = end - timedelta(days=months * 30)
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(BOE_URL, params={"csv.x": "yes", "Datefrom": start.strftime("%d/%b/%Y"), "Dateto": end.strftime("%d/%b/%Y"), "SeriesCodes": "IUDBEDR", "CSVF": "TN", "UsingCodes": "Y"})
+            resp = await client.get(BOE_URL, params={
+                "csv.x": "yes",
+                "Datefrom": start.strftime("%d/%b/%Y"),
+                "Dateto": end.strftime("%d/%b/%Y"),
+                "SeriesCodes": "IUDBEDR",
+                "CSVF": "TN",
+                "UsingCodes": "Y",
+            })
             resp.raise_for_status()
         rates = []
         for line in resp.text.strip().split("\n")[1:]:
             parts = line.strip().split(",")
             if len(parts) >= 2:
-                try: rates.append({"date": parts[0].strip().strip(\'"\'), "rate": float(parts[1].strip().strip(\'"\'))})
-                except: pass
+                try:
+                    date_val = parts[0].strip().strip('"')
+                    rate_val = float(parts[1].strip().strip('"'))
+                    rates.append({"date": date_val, "rate": rate_val})
+                except (ValueError, IndexError):
+                    pass
         return {"current_rate": rates[-1]["rate"] if rates else None, "source": "Bank of England", "history": rates[-24:]}
-    except:
+    except Exception as e:
+        logger.error(f"BoE API failed: {e}")
         return {"current_rate": 4.5, "source": "fallback estimate", "history": []}
 
 
@@ -35,7 +47,8 @@ async def fetch_exchange_rates(base: str = "GBP", targets: list = None) -> dict:
             resp.raise_for_status()
             data = resp.json()
         return {"base": data.get("base"), "date": data.get("date"), "rates": data.get("rates", {}), "source": "ECB"}
-    except:
+    except Exception as e:
+        logger.error(f"Exchange rate fetch failed: {e}")
         return {"base": base, "rates": {"USD": 1.27, "EUR": 1.17}, "source": "fallback"}
 
 
@@ -44,16 +57,28 @@ async def fetch_inflation(months: int = 24) -> dict:
     start = end - timedelta(days=months * 30)
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(BOE_URL, params={"csv.x": "yes", "Datefrom": start.strftime("%d/%b/%Y"), "Dateto": end.strftime("%d/%b/%Y"), "SeriesCodes": "D7BT", "CSVF": "TN", "UsingCodes": "Y"})
+            resp = await client.get(BOE_URL, params={
+                "csv.x": "yes",
+                "Datefrom": start.strftime("%d/%b/%Y"),
+                "Dateto": end.strftime("%d/%b/%Y"),
+                "SeriesCodes": "D7BT",
+                "CSVF": "TN",
+                "UsingCodes": "Y",
+            })
             resp.raise_for_status()
         data = []
         for line in resp.text.strip().split("\n")[1:]:
             parts = line.strip().split(",")
             if len(parts) >= 2:
-                try: data.append({"date": parts[0].strip().strip(\'"\'), "cpi_pct": float(parts[1].strip().strip(\'"\'))})
-                except: pass
+                try:
+                    date_val = parts[0].strip().strip('"')
+                    cpi_val = float(parts[1].strip().strip('"'))
+                    data.append({"date": date_val, "cpi_pct": cpi_val})
+                except (ValueError, IndexError):
+                    pass
         return {"current_cpi": data[-1]["cpi_pct"] if data else None, "source": "Bank of England / ONS", "history": data}
-    except:
+    except Exception as e:
+        logger.error(f"Inflation data failed: {e}")
         return {"current_cpi": 3.0, "source": "fallback estimate", "history": []}
 
 
@@ -68,6 +93,10 @@ def calculate_mortgage(price: float, deposit: float, rate: float, years: int, in
     else:
         mp = loan * (mr * (1 + mr) ** months) / ((1 + mr) ** months - 1) if mr > 0 else loan / months
         total = mp * months
-    return {"property_price": price, "deposit": deposit, "loan": round(loan, 2), "ltv_pct": round(ltv, 1),
-            "rate_pct": rate, "term_years": years, "type": "Interest Only" if interest_only else "Repayment",
-            "monthly_payment": round(mp, 2), "total_cost": round(total, 2), "total_interest": round(total - loan, 2)}
+    return {
+        "property_price": price, "deposit": deposit, "loan": round(loan, 2),
+        "ltv_pct": round(ltv, 1), "rate_pct": rate, "term_years": years,
+        "type": "Interest Only" if interest_only else "Repayment",
+        "monthly_payment": round(mp, 2), "total_cost": round(total, 2),
+        "total_interest": round(total - loan, 2),
+    }
