@@ -1,11 +1,17 @@
 """
-payment.py — x402 Payment Protocol Middleware (FIXED for v2)
+payment.py — x402 Payment Protocol Middleware (v2 + CDP Settlement)
 """
 
 import httpx
 import logging
 import json
 import base64
+import time
+import secrets
+import os
+
+import jwt
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -20,6 +26,42 @@ USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 FREE_ENDPOINTS = {
     "/", "/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico",
 }
+
+
+def _build_cdp_jwt(method, path):
+    """Build a JWT for authenticating with the CDP facilitator."""
+    key_id = os.environ.get("CDP_API_KEY_ID", "")
+    key_raw = os.environ.get("CDP_API_KEY_SECRET", "")
+
+    if not key_id or not key_raw:
+        return None
+
+    key_bytes = base64.b64decode(key_raw)
+    private_key = Ed25519PrivateKey.from_private_bytes(key_bytes[:32])
+    uri = f"{method} api.cdp.coinbase.com{path}"
+
+    payload = {
+        "sub": key_id,
+        "iss": "cdp",
+        "nbf": int(time.time()),
+        "exp": int(time.time()) + 120,
+        "uri": uri,
+    }
+
+    return jwt.encode(
+        payload,
+        private_key,
+        algorithm="EdDSA",
+        headers={"kid": key_id, "nonce": secrets.token_hex()},
+    )
+
+
+def _decode_payload(payment_header):
+    """Decode base64 payment payload to dict for facilitator."""
+    try:
+        return json.loads(base64.b64decode(payment_header))
+    except Exception:
+        return {"raw": payment_header}
 
 
 class X402PaymentMiddleware(BaseHTTPMiddleware):
@@ -39,7 +81,7 @@ class X402PaymentMiddleware(BaseHTTPMiddleware):
             logger.info(f"402 Payment Required for {request.method} {path}")
             return _build_402_response(settings, request)
 
-        is_valid = await _verify_payment(
+        is_valid = await _verify_and_settle(
             payment_header=payment_header,
             settings=settings,
             request=request,
@@ -89,17 +131,8 @@ def _build_402_response(settings, request: Request) -> JSONResponse:
     )
 
 
-
-def _decode_payload(payment_header: str) -> dict:
-    """Decode base64 payment payload to dict for facilitator."""
-    try:
-        decoded = json.loads(base64.b64decode(payment_header))
-        return decoded
-    except Exception:
-        return {"raw": payment_header}
-
-
-async def _verify_payment(payment_header: str, settings, request: Request) -> bool:
+async def _verify_and_settle(payment_header: str, settings, request: Request) -> bool:
+    """Verify payment and settle on-chain via CDP facilitator."""
     facilitator_url = settings.x402_facilitator_url
 
     if not facilitator_url:
@@ -119,43 +152,64 @@ async def _verify_payment(payment_header: str, settings, request: Request) -> bo
         "extra": {"name": "USD Coin", "version": "2"},
     }
 
+    decoded_payload = _decode_payload(payment_header)
+
+    verify_body = {
+        "x402Version": 2,
+        "paymentPayload": decoded_payload,
+        "paymentRequirements": payment_requirements,
+    }
+
     try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            # Build auth headers
+            headers = {}
+            verify_jwt = _build_cdp_jwt("POST", "/platform/v2/x402/verify")
+            if verify_jwt:
+                headers["Authorization"] = f"Bearer {verify_jwt}"
+
+            # Step 1: Verify
             response = await client.post(
                 f"{facilitator_url}/verify",
-                json={
-                    "paymentPayload": _decode_payload(payment_header),
-                    "paymentRequirements": payment_requirements,
-                },
+                json=verify_body,
+                headers=headers,
             )
 
-            if response.status_code == 200:
-                result = response.json()
-                is_valid = result.get("valid", False) or result.get("isValid", False)
-                if is_valid:
-                    logger.info(f"Payment verified: {result}")
-                    # Settle — actually move the USDC on-chain
-                    try:
-                        settle_resp = await client.post(
-                            f"{facilitator_url}/settle",
-                            json={
-                                "x402Version": 2,
-                                "paymentPayload": _decode_payload(payment_header),
-                                "paymentRequirements": payment_requirements,
-                            },
-                        )
-                        settle_data = settle_resp.json()
-                        tx_hash = settle_data.get("txHash", settle_data.get("transactionHash"))
-                        if tx_hash:
-                            logger.info(f"Payment settled on-chain: {tx_hash}")
-                        else:
-                            logger.info(f"Settlement response: {settle_data}")
-                    except Exception as e:
-                        logger.warning(f"Settlement call failed (payment still verified): {e}")
-                return is_valid
-            else:
-                logger.error(f"Facilitator returned {response.status_code}: {response.text}")
+            if response.status_code != 200:
+                logger.error(f"Facilitator verify returned {response.status_code}: {response.text}")
                 return False
+
+            result = response.json()
+            is_valid = result.get("isValid", False)
+
+            if not is_valid:
+                logger.warning(f"Payment invalid: {result}")
+                return False
+
+            logger.info(f"Payment verified: payer={result.get('payer')}")
+
+            # Step 2: Settle (move money on-chain)
+            settle_headers = {}
+            settle_jwt = _build_cdp_jwt("POST", "/platform/v2/x402/settle")
+            if settle_jwt:
+                settle_headers["Authorization"] = f"Bearer {settle_jwt}"
+
+            settle_resp = await client.post(
+                f"{facilitator_url}/settle",
+                json=verify_body,
+                headers=settle_headers,
+            )
+
+            settle_data = settle_resp.json()
+
+            if settle_data.get("success"):
+                tx_hash = settle_data.get("transaction", "")
+                logger.info(f"Payment settled on-chain: {tx_hash}")
+            else:
+                logger.warning(f"Settlement failed: {settle_data}")
+                # Still return True — payment was verified even if settle failed
+
+            return True
 
     except httpx.TimeoutException:
         logger.error("Payment verification timed out")

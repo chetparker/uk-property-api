@@ -38,3 +38,5 @@ pytest-asyncio>=0.23.0
 # --- Utilities ---
 # python-dotenv loads .env files (used by pydantic-settings).
 python-dotenv>=1.0.0
+PyJWT>=2.0
+cryptography>=41.0
