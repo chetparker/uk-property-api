@@ -541,3 +541,17 @@ def mount_mcp(app: FastAPI):
         }
 
     logger.info("MCP mounted: /mcp/sse, /mcp/messages, /mcp/config, /.well-known/mcp.json")
+
+
+def mount_server_card(app):
+    """Smithery server card for auto-discovery."""
+    @app.get("/.well-known/mcp/server-card.json", include_in_schema=False)
+    async def server_card():
+        return {
+            "name": "UK Data API",
+            "description": "24 UK data endpoints — property, weather, companies, vehicles, finance. Paid via x402.",
+            "url": "https://web-production-18a32.up.railway.app/mcp/sse",
+            "transport": "sse",
+            "version": "2.0.0",
+            "tools_count": 24
+        }

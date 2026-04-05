@@ -189,6 +189,8 @@ app.include_router(finance_router)
 
 from app.mcp_server import mount_mcp
 mount_mcp(app)
+from app.mcp_server import mount_server_card
+mount_server_card(app)
 
 
 # =============================================================================
