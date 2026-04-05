@@ -193,6 +193,36 @@ async def root():
     }
 
 
+@app.get('/.well-known/x402.json', include_in_schema=False)
+async def well_known_x402():
+    return {
+        'x402Version': 2,
+        'service': {
+            'name': 'UK Property Data API',
+            'description': 'Land Registry sold prices, rental yields, stamp duty, EPC, crime, flood risk, planning, council tax',
+            'version': '1.0.0',
+            'homepage': 'https://github.com/chetparker/uk-property-api',
+        },
+        'payment': {
+            'payTo': settings.payment_wallet_address,
+            'network': 'eip155:8453',
+            'scheme': 'exact',
+            'asset': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            'facilitator': 'https://api.cdp.coinbase.com/platform/v2/x402',
+        },
+        'endpoints': [
+            {'method': 'POST', 'path': '/sold-prices', 'price': '0.001', 'description': 'HM Land Registry sold prices'},
+            {'method': 'POST', 'path': '/yield-estimate', 'price': '0.001', 'description': 'Rental yield estimates'},
+            {'method': 'POST', 'path': '/stamp-duty', 'price': '0.001', 'description': 'SDLT calculator'},
+            {'method': 'POST', 'path': '/epc-rating', 'price': '0.001', 'description': 'EPC energy ratings'},
+            {'method': 'POST', 'path': '/crime-stats', 'price': '0.001', 'description': 'Crime statistics'},
+            {'method': 'POST', 'path': '/flood-risk', 'price': '0.001', 'description': 'Flood risk assessment'},
+            {'method': 'POST', 'path': '/planning-applications', 'price': '0.001', 'description': 'Planning applications'},
+            {'method': 'POST', 'path': '/council-tax', 'price': '0.001', 'description': 'Council tax data'},
+        ],
+    }
+
+
 @app.get(
     "/health",
     response_model=HealthResponse,
