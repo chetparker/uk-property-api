@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # ---- x402 Payment Protocol ----
     # The facilitator is a third-party service that verifies payments.
-    x402_facilitator_url: str = "https://x402.org/facilitator"
+    x402_facilitator_url: str = "https://api.cdp.coinbase.com/platform/v2/x402"
 
     # Your wallet address — where payments are sent.
     payment_wallet_address: str = ""
