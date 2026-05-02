@@ -208,8 +208,46 @@ async def root():
     }
 
 
+_ENDPOINTS = [
+    {'method': 'POST', 'path': '/sold-prices', 'price': '0.001', 'description': 'HM Land Registry sold prices'},
+    {'method': 'POST', 'path': '/yield-estimate', 'price': '0.001', 'description': 'Rental yield estimates'},
+    {'method': 'POST', 'path': '/stamp-duty', 'price': '0.001', 'description': 'SDLT calculator'},
+    {'method': 'POST', 'path': '/epc-rating', 'price': '0.001', 'description': 'EPC energy ratings'},
+    {'method': 'POST', 'path': '/crime-stats', 'price': '0.001', 'description': 'Crime statistics'},
+    {'method': 'POST', 'path': '/flood-risk', 'price': '0.001', 'description': 'Flood risk assessment'},
+    {'method': 'POST', 'path': '/planning', 'price': '0.001', 'description': 'Planning applications'},
+    {'method': 'POST', 'path': '/council-tax', 'price': '0.001', 'description': 'Council tax data'},
+    {'method': 'POST', 'path': '/current-weather', 'price': '0.001', 'description': 'Current weather conditions'},
+    {'method': 'POST', 'path': '/weather-forecast', 'price': '0.001', 'description': 'Weather forecast'},
+    {'method': 'POST', 'path': '/historical-weather', 'price': '0.002', 'description': 'Historical weather'},
+    {'method': 'POST', 'path': '/air-quality', 'price': '0.001', 'description': 'Air quality index'},
+    {'method': 'POST', 'path': '/company-search', 'price': '0.001', 'description': 'Search UK companies'},
+    {'method': 'POST', 'path': '/company-profile', 'price': '0.001', 'description': 'Company profile'},
+    {'method': 'POST', 'path': '/officers', 'price': '0.001', 'description': 'Company officers'},
+    {'method': 'POST', 'path': '/filings', 'price': '0.001', 'description': 'Filing history'},
+    {'method': 'POST', 'path': '/vehicle-info', 'price': '0.001', 'description': 'Vehicle details'},
+    {'method': 'POST', 'path': '/mot-history', 'price': '0.002', 'description': 'MOT test history'},
+    {'method': 'POST', 'path': '/tax-status', 'price': '0.001', 'description': 'Vehicle tax status'},
+    {'method': 'POST', 'path': '/emissions', 'price': '0.001', 'description': 'Vehicle emissions'},
+    {'method': 'POST', 'path': '/interest-rates', 'price': '0.001', 'description': 'BoE base rate'},
+    {'method': 'POST', 'path': '/exchange-rates', 'price': '0.001', 'description': 'Exchange rates'},
+    {'method': 'POST', 'path': '/inflation', 'price': '0.001', 'description': 'UK CPI inflation'},
+    {'method': 'POST', 'path': '/mortgage-calculator', 'price': '0.001', 'description': 'Mortgage calculator'},
+]
+
+
 @app.get('/.well-known/x402.json', include_in_schema=False)
 async def well_known_x402():
+    from app.bazaar import get_metadata
+
+    endpoints = []
+    for ep in _ENDPOINTS:
+        meta = get_metadata(ep['path'])
+        entry = dict(ep)
+        if meta:
+            entry['extensions'] = {'bazaar': meta}
+        endpoints.append(entry)
+
     return {
         'x402Version': 2,
         'service': {
@@ -225,32 +263,7 @@ async def well_known_x402():
             'asset': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
             'facilitator': 'https://api.cdp.coinbase.com/platform/v2/x402',
         },
-        'endpoints': [
-            {'method': 'POST', 'path': '/sold-prices', 'price': '0.001', 'description': 'HM Land Registry sold prices'},
-            {'method': 'POST', 'path': '/yield-estimate', 'price': '0.001', 'description': 'Rental yield estimates'},
-            {'method': 'POST', 'path': '/stamp-duty', 'price': '0.001', 'description': 'SDLT calculator'},
-            {'method': 'POST', 'path': '/epc-rating', 'price': '0.001', 'description': 'EPC energy ratings'},
-            {'method': 'POST', 'path': '/crime-stats', 'price': '0.001', 'description': 'Crime statistics'},
-            {'method': 'POST', 'path': '/flood-risk', 'price': '0.001', 'description': 'Flood risk assessment'},
-            {'method': 'POST', 'path': '/planning-applications', 'price': '0.001', 'description': 'Planning applications'},
-            {'method': 'POST', 'path': '/council-tax', 'price': '0.001', 'description': 'Council tax data'},
-            {'method': 'POST', 'path': '/current-weather', 'price': '0.001', 'description': 'Current weather conditions'},
-            {'method': 'POST', 'path': '/weather-forecast', 'price': '0.001', 'description': 'Weather forecast'},
-            {'method': 'POST', 'path': '/historical-weather', 'price': '0.002', 'description': 'Historical weather'},
-            {'method': 'POST', 'path': '/air-quality', 'price': '0.001', 'description': 'Air quality index'},
-            {'method': 'POST', 'path': '/company-search', 'price': '0.001', 'description': 'Search UK companies'},
-            {'method': 'POST', 'path': '/company-profile', 'price': '0.001', 'description': 'Company profile'},
-            {'method': 'POST', 'path': '/officers', 'price': '0.001', 'description': 'Company officers'},
-            {'method': 'POST', 'path': '/filings', 'price': '0.001', 'description': 'Filing history'},
-            {'method': 'POST', 'path': '/vehicle-info', 'price': '0.001', 'description': 'Vehicle details'},
-            {'method': 'POST', 'path': '/mot-history', 'price': '0.002', 'description': 'MOT test history'},
-            {'method': 'POST', 'path': '/tax-status', 'price': '0.001', 'description': 'Vehicle tax status'},
-            {'method': 'POST', 'path': '/emissions', 'price': '0.001', 'description': 'Vehicle emissions'},
-            {'method': 'POST', 'path': '/interest-rates', 'price': '0.001', 'description': 'BoE base rate'},
-            {'method': 'POST', 'path': '/exchange-rates', 'price': '0.001', 'description': 'Exchange rates'},
-            {'method': 'POST', 'path': '/inflation', 'price': '0.001', 'description': 'UK CPI inflation'},
-            {'method': 'POST', 'path': '/mortgage-calculator', 'price': '0.001', 'description': 'Mortgage calculator'},
-        ],
+        'endpoints': endpoints,
     }
 
 

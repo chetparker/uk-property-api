@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app.config import get_settings
+from app.bazaar import get_metadata as _get_bazaar_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -102,24 +103,28 @@ def _build_402_response(settings, request: Request) -> JSONResponse:
     price_usd = float(settings.price_per_request)
     amount = str(int(price_usd * 1_000_000))
 
+    accept_entry = {
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "asset": USDC_BASE,
+        "amount": amount,
+        "payTo": settings.payment_wallet_address,
+        "maxTimeoutSeconds": 300,
+        "extra": {
+            "name": "USD Coin",
+            "version": "2",
+        },
+    }
+
+    bazaar_meta = _get_bazaar_metadata(request.url.path)
+    if bazaar_meta:
+        accept_entry["extensions"] = {"bazaar": bazaar_meta}
+
     body = {
         "x402Version": 2,
         "error": "Payment required",
         "resource": {"url": str(request.url)},
-        "accepts": [
-            {
-                "scheme": "exact",
-                "network": "eip155:8453",
-                "asset": USDC_BASE,
-                "amount": amount,
-                "payTo": settings.payment_wallet_address,
-                "maxTimeoutSeconds": 300,
-                "extra": {
-                    "name": "USD Coin",
-                    "version": "2",
-                },
-            }
-        ],
+        "accepts": [accept_entry],
     }
 
     encoded = base64.b64encode(json.dumps(body).encode()).decode()
