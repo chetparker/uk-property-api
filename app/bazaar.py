@@ -37,10 +37,19 @@ def _v2(
     body_required: list,
     output_example: dict,
     output_properties: dict,
-    tags: list,
-    category: str = "data-analytics",
+    # tags/category retained on the call sites but currently dropped — the
+    # x402 SDK's declareDiscoveryExtension does NOT emit these fields and
+    # CDP rejects extensions that include them at the top level under
+    # `discovery request validation failed`. Kept as kwargs so the data
+    # is still recorded if/when CDP supports it.
+    tags: list | None = None,
+    category: str | None = None,
 ) -> dict:
     """Build a v2 Bazaar metadata entry from compact inputs.
+
+    The output matches the wire format produced by
+    `x402-foundation/x402` `declareDiscoveryExtension(... body_type="json")`
+    so CDP's strict validator accepts it for cataloging.
 
     Guarantees:
       - info.input strictly satisfies schema.properties.input
@@ -52,6 +61,19 @@ def _v2(
             f"body_example is missing required keys {missing}; "
             "CDP would reject this entry."
         )
+
+    body_input_schema = {
+        "type": "object",
+        "properties": body_properties,
+        "required": body_required,
+    }
+
+    # Output example schema: {"type": "object", **output_response_schema}.
+    # Mirrors how _create_body_discovery_extension merges output.schema
+    # into the example sub-schema.
+    output_example_schema: dict = {"type": "object"}
+    if output_properties:
+        output_example_schema["properties"] = output_properties
 
     return {
         "info": {
@@ -73,32 +95,25 @@ def _v2(
                 "input": {
                     "type": "object",
                     "properties": {
-                        "type": {"const": "http"},
-                        "method": {"enum": ["POST"]},
-                        "bodyType": {"enum": ["json"]},
-                        "body": {
-                            "type": "object",
-                            "properties": body_properties,
-                            "required": body_required,
-                        },
+                        "type": {"type": "string", "const": "http"},
+                        "method": {"type": "string", "enum": ["POST", "PUT", "PATCH"]},
+                        "bodyType": {"type": "string", "enum": ["json", "form-data", "text"]},
+                        "body": body_input_schema,
                     },
                     "required": ["type", "method", "bodyType", "body"],
+                    "additionalProperties": False,
                 },
                 "output": {
                     "type": "object",
                     "properties": {
                         "type": {"type": "string"},
-                        "example": {
-                            "type": "object",
-                            "properties": output_properties,
-                        },
+                        "example": output_example_schema,
                     },
+                    "required": ["type"],
                 },
             },
             "required": ["input"],
         },
-        "category": category,
-        "tags": tags,
     }
 
 
