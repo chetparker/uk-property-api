@@ -18,7 +18,10 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app.config import get_settings
-from app.bazaar import get_metadata as _get_bazaar_metadata
+from app.bazaar import (
+    get_metadata as _get_bazaar_metadata,
+    get_description as _get_bazaar_description,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -143,16 +146,25 @@ def _build_402_response(settings, request: Request) -> JSONResponse:
         },
     }
 
-    bazaar_meta = _get_bazaar_metadata(request.url.path)
-    if bazaar_meta:
-        accept_entry["extensions"] = {"bazaar": bazaar_meta}
+    # Per x402 v2 PaymentRequired schema, `extensions` is a top-level field
+    # on the 402 body — not nested under each accept. The buyer's client
+    # copies it (along with `resource`) into the X-PAYMENT body, where the
+    # CDP facilitator reads it for Bazaar cataloging.
+    resource_block: dict = {"url": str(request.url)}
+    description = _get_bazaar_description(request.url.path)
+    if description:
+        resource_block["description"] = description
 
-    body = {
+    body: dict = {
         "x402Version": 2,
         "error": "Payment required",
-        "resource": {"url": str(request.url)},
+        "resource": resource_block,
         "accepts": [accept_entry],
     }
+
+    bazaar_meta = _get_bazaar_metadata(request.url.path)
+    if bazaar_meta:
+        body["extensions"] = {"bazaar": bazaar_meta}
 
     encoded = base64.b64encode(json.dumps(body).encode()).decode()
 
@@ -184,15 +196,10 @@ async def _verify_and_settle(payment_header: str, settings, request: Request) ->
         "extra": {"name": "USD Coin", "version": "2"},
     }
 
-    # CDP indexes bazaar metadata at verify/settle time. The metadata MUST
-    # be present in paymentRequirements on these calls — embedding it only
-    # in the 402 challenge to the buyer is not enough. Without this, CDP
-    # never sees the extension and the resource is silently dropped from
-    # agentic.market discovery.
-    bazaar_meta = _get_bazaar_metadata(request.url.path)
-    if bazaar_meta:
-        payment_requirements["extensions"] = {"bazaar": bazaar_meta}
-
+    # NOTE: bazaar extension does NOT go on paymentRequirements. The CDP
+    # facilitator reads it from `paymentPayload.extensions.bazaar` — which
+    # the buyer's client copies from the 402 PaymentRequired body. The
+    # PaymentRequirements schema has no `extensions` field at all.
     decoded_payload = _decode_payload(payment_header)
 
     verify_body = {

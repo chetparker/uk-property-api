@@ -737,6 +737,41 @@ BAZAAR_METADATA: dict = {
 }
 
 
+# Short human-readable descriptions, surfaced in `paymentPayload.resource.description`
+# at 402-challenge time. CDP indexes this for semantic search ranking.
+ENDPOINT_DESCRIPTIONS: dict = {
+    "/sold-prices": "UK HM Land Registry sold property prices by postcode.",
+    "/yield-estimate": "Estimated rental yield for a UK postcode.",
+    "/stamp-duty": "UK Stamp Duty Land Tax (SDLT) calculator with first-time buyer relief and surcharges.",
+    "/epc-rating": "UK Energy Performance Certificate (EPC) ratings by postcode.",
+    "/crime-stats": "UK street-level crime statistics by postcode (Police UK).",
+    "/flood-risk": "UK flood risk by postcode (Environment Agency).",
+    "/planning": "UK planning applications near a postcode.",
+    "/council-tax": "UK council tax bands A–H by postcode.",
+    "/current-weather": "Current weather conditions by city or place name.",
+    "/weather-forecast": "Multi-day weather forecast by city or place name.",
+    "/historical-weather": "Historical daily weather records over a date range.",
+    "/air-quality": "Air quality index (PM2.5, PM10, ozone, NO2) by city.",
+    "/company-search": "Search UK Companies House by name.",
+    "/company-profile": "UK Companies House profile by registration number.",
+    "/officers": "UK company officers (directors, secretaries) by company number.",
+    "/filings": "UK Companies House filing history by company number.",
+    "/vehicle-info": "UK DVLA vehicle details by registration plate.",
+    "/mot-history": "UK DVSA MOT test history by registration plate.",
+    "/tax-status": "UK vehicle tax and MOT status by registration plate.",
+    "/emissions": "UK vehicle CO2 emissions and engine data by registration plate.",
+    "/interest-rates": "Bank of England base rate, current and historical.",
+    "/exchange-rates": "Foreign exchange rates against a base currency.",
+    "/inflation": "UK CPI inflation rate, current and historical (ONS).",
+    "/mortgage-calculator": "UK mortgage calculator with monthly payments and total interest.",
+}
+
+
 def get_metadata(path: str) -> dict | None:
     """Return v2 bazaar metadata for the given path, or None if not registered."""
     return BAZAAR_METADATA.get(path.rstrip("/") or "/")
+
+
+def get_description(path: str) -> str | None:
+    """Return short description for resource cataloging, or None if not registered."""
+    return ENDPOINT_DESCRIPTIONS.get(path.rstrip("/") or "/")
