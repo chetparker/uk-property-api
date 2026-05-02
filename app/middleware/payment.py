@@ -173,6 +173,15 @@ async def _verify_and_settle(payment_header: str, settings, request: Request) ->
         "extra": {"name": "USD Coin", "version": "2"},
     }
 
+    # CDP indexes bazaar metadata at verify/settle time. The metadata MUST
+    # be present in paymentRequirements on these calls — embedding it only
+    # in the 402 challenge to the buyer is not enough. Without this, CDP
+    # never sees the extension and the resource is silently dropped from
+    # agentic.market discovery.
+    bazaar_meta = _get_bazaar_metadata(request.url.path)
+    if bazaar_meta:
+        payment_requirements["extensions"] = {"bazaar": bazaar_meta}
+
     decoded_payload = _decode_payload(payment_header)
 
     verify_body = {
