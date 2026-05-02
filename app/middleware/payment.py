@@ -71,28 +71,20 @@ def _decode_payload(payment_header):
 def _log_extension_responses(stage: str, response):
     """Log the EXTENSION-RESPONSES header from a CDP facilitator response.
 
-    CDP returns this header on /verify and /settle to report whether the
-    Bazaar metadata embedded in the request was accepted (status: processing)
-    or dropped (status: rejected). Logs all headers + body in diagnostic
-    mode so we can see what CDP actually sends back while we work out the
-    correct extension shape.
+    CDP returns this header on settle (and sometimes verify) to report
+    whether the Bazaar metadata was cataloged. The header value is a
+    base64-encoded JSON object like:
+        {"bazaar": {"status": "processing"}}
+        {"bazaar": {"status": "rejected", "rejectedReason": "..."}}
+        {"bazaar": {"status": "success"}}
     """
     header = response.headers.get("EXTENSION-RESPONSES") or response.headers.get("extension-responses")
     if header:
-        logger.info(f"CDP {stage} EXTENSION-RESPONSES: {header}")
-    else:
-        # Diagnostic: dump all response headers and body so we can spot
-        # whether the header lives under a different name or whether the
-        # extension is being silently dropped from the request.
-        all_headers = dict(response.headers)
         try:
-            body_preview = response.text[:500]
+            decoded = base64.b64decode(header).decode()
+            logger.info(f"CDP {stage} EXTENSION-RESPONSES: {decoded}")
         except Exception:
-            body_preview = "<unreadable>"
-        logger.info(
-            f"CDP {stage}: no EXTENSION-RESPONSES header. "
-            f"all_headers={all_headers} body={body_preview}"
-        )
+            logger.info(f"CDP {stage} EXTENSION-RESPONSES (raw): {header}")
 
 
 class X402PaymentMiddleware(BaseHTTPMiddleware):
