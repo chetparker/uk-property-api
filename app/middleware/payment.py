@@ -150,7 +150,19 @@ def _build_402_response(settings, request: Request) -> JSONResponse:
     # on the 402 body — not nested under each accept. The buyer's client
     # copies it (along with `resource`) into the X-PAYMENT body, where the
     # CDP facilitator reads it for Bazaar cataloging.
-    resource_block: dict = {"url": str(request.url)}
+    #
+    # Reconstruct the original public URL from X-Forwarded-Proto / Host —
+    # Railway terminates TLS at the proxy and forwards internally as HTTP,
+    # so `request.url` would otherwise leak `http://` to CDP. CDP rejects
+    # non-HTTPS resources during discovery validation.
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
+    forwarded_host = request.headers.get("x-forwarded-host", "").split(",")[0].strip()
+    scheme = forwarded_proto or request.url.scheme
+    host = forwarded_host or request.url.netloc
+    public_url = f"{scheme}://{host}{request.url.path}"
+    if request.url.query:
+        public_url += f"?{request.url.query}"
+    resource_block: dict = {"url": public_url}
     description = _get_bazaar_description(request.url.path)
     if description:
         resource_block["description"] = description
