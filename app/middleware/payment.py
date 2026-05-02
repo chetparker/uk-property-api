@@ -70,15 +70,26 @@ def _log_extension_responses(stage: str, response):
 
     CDP returns this header on /verify and /settle to report whether the
     Bazaar metadata embedded in the request was accepted (status: processing)
-    or dropped (status: rejected). If we never see this header we can't tell
-    why a resource isn't appearing in agentic.market discovery — so capture
-    it explicitly even when the response body looks fine.
+    or dropped (status: rejected). Logs all headers + body in diagnostic
+    mode so we can see what CDP actually sends back while we work out the
+    correct extension shape.
     """
     header = response.headers.get("EXTENSION-RESPONSES") or response.headers.get("extension-responses")
-    if not header:
-        logger.info(f"CDP {stage}: no EXTENSION-RESPONSES header")
-        return
-    logger.info(f"CDP {stage} EXTENSION-RESPONSES: {header}")
+    if header:
+        logger.info(f"CDP {stage} EXTENSION-RESPONSES: {header}")
+    else:
+        # Diagnostic: dump all response headers and body so we can spot
+        # whether the header lives under a different name or whether the
+        # extension is being silently dropped from the request.
+        all_headers = dict(response.headers)
+        try:
+            body_preview = response.text[:500]
+        except Exception:
+            body_preview = "<unreadable>"
+        logger.info(
+            f"CDP {stage}: no EXTENSION-RESPONSES header. "
+            f"all_headers={all_headers} body={body_preview}"
+        )
 
 
 class X402PaymentMiddleware(BaseHTTPMiddleware):
