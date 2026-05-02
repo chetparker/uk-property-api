@@ -65,6 +65,22 @@ def _decode_payload(payment_header):
         return {"raw": payment_header}
 
 
+def _log_extension_responses(stage: str, response):
+    """Log the EXTENSION-RESPONSES header from a CDP facilitator response.
+
+    CDP returns this header on /verify and /settle to report whether the
+    Bazaar metadata embedded in the request was accepted (status: processing)
+    or dropped (status: rejected). If we never see this header we can't tell
+    why a resource isn't appearing in agentic.market discovery — so capture
+    it explicitly even when the response body looks fine.
+    """
+    header = response.headers.get("EXTENSION-RESPONSES") or response.headers.get("extension-responses")
+    if not header:
+        logger.info(f"CDP {stage}: no EXTENSION-RESPONSES header")
+        return
+    logger.info(f"CDP {stage} EXTENSION-RESPONSES: {header}")
+
+
 class X402PaymentMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         settings = get_settings()
@@ -180,6 +196,8 @@ async def _verify_and_settle(payment_header: str, settings, request: Request) ->
                 headers=headers,
             )
 
+            _log_extension_responses("verify", response)
+
             if response.status_code != 200:
                 logger.error(f"Facilitator verify returned {response.status_code}: {response.text}")
                 return False
@@ -204,6 +222,8 @@ async def _verify_and_settle(payment_header: str, settings, request: Request) ->
                 json=verify_body,
                 headers=settle_headers,
             )
+
+            _log_extension_responses("settle", settle_resp)
 
             settle_data = settle_resp.json()
 
